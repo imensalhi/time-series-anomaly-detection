@@ -1,0 +1,66 @@
+# ===========================================================
+# Pipeline Parameters — used by DVC stages and training scripts
+# ===========================================================
+
+seed: 42
+
+data:
+  data_dir: data
+  profiles:
+    profil_1_stable:
+      - I23
+      - I61
+    profil_2_bimodal:
+      - I42
+      - I43
+    profil_3_multi:
+      - "52"
+      - I11
+      - I113
+      - I32
+  anomaly_types:
+    - spike
+    - plateau
+    - drift
+    - variance
+    - dropout
+    - shape_shift
+
+windowing:
+  window_size: 128
+  step_size: 64
+
+cwt:
+  scales_min: 1
+  scales_max: 65   # np.arange(scales_min, scales_max)
+  wavelet: morl
+
+classification:
+  batch_size: 64
+  epochs: 30
+  learning_rate: 0.001
+  anomaly_ratio: 0.15
+  output_dir: results_classification
+
+autoencoder:
+  batch_size: 64
+  epochs: 40
+  learning_rate: 0.001
+  anomaly_ratio_test: 0.20
+  threshold_percentile: 95
+  output_dir: results_autoencoder
+
+contrastive:
+  batch_size: 256
+  epochs_pretrain: 80
+  learning_rate: 0.0003
+  temperature: 0.05
+  embedding_dim: 128
+  anomaly_ratio_test: 0.20
+  output_dir: results_contrastive
+
+mlflow:
+  tracking_uri: mlruns
+  experiment_classification: "cwt-cnn-classification"
+  experiment_autoencoder: "cwt-cnn-autoencoder"
+  experiment_contrastive: "contrastive-1d"

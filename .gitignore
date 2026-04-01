@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# MLflow tracking data (generated locally — large binary files)
+mlruns/
+
+# DVC cache
+.dvc/cache/
+.dvc/tmp/
+
+# Trained model weights (tracked by DVC, not git)
+*.pth
+
+# Generated result directories (tracked by DVC)
+results_classification/
+results_autoencoder/
+results_contrastive/
+reports/
+metrics/
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
