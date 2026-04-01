@@ -1,0 +1,75 @@
+name: CI — Lint & Data Validation
+
+# Runs on every push and pull-request to ensure code quality
+# and basic data integrity before a full training run.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  lint:
+    name: Lint (flake8)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install linting dependencies
+        run: pip install flake8
+
+      - name: Run flake8
+        run: flake8 src/ --max-line-length=100 --ignore=E203,W503
+
+  data-validation:
+    name: Data Integrity (Deepchecks)
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # Cache pip packages to speed up CI
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # DVC: pull only the data directory (no remote configured → use git-tracked pointer)
+      - name: Install DVC
+        run: pip install dvc
+
+      - name: Run data validation (Deepchecks)
+        run: python src/validate.py
+        env:
+          # MLflow stores runs locally when no server is configured
+          MLFLOW_TRACKING_URI: mlruns
+
+      - name: Upload Deepchecks HTML reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deepchecks-reports
+          path: reports/
+          retention-days: 14

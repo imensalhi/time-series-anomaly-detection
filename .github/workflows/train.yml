@@ -1,0 +1,106 @@
+name: Train — Full DVC Pipeline
+
+# Runs the complete MLOps pipeline when code is pushed to main.
+# Stages:
+#   1. train_classification  (CWT + CNN supervised)
+#   2. train_autoencoder     (CWT + CNN unsupervised)
+#   3. train_contrastive     (self-supervised contrastive 1D)
+#   4. validate              (Deepchecks data + model checks)
+#
+# Artefacts are uploaded so reviewers can inspect results without
+# having to run the pipeline locally.
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:   # Allow manual trigger from the GitHub UI
+
+jobs:
+  train:
+    name: DVC Pipeline (train + validate)
+    runs-on: ubuntu-latest
+    # Training is CPU-only in CI; use a GPU runner for production.
+    timeout-minutes: 360
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # ── Restore pip cache ─────────────────────────────────────────────────
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # ── Install dependencies ──────────────────────────────────────────────
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ── DVC: run the full pipeline ────────────────────────────────────────
+      # dvc repro reruns only stages whose dependencies have changed.
+      - name: Run DVC pipeline
+        run: dvc repro
+        env:
+          MLFLOW_TRACKING_URI: mlruns
+
+      # ── Upload trained models ─────────────────────────────────────────────
+      - name: Upload classification models & plots
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-classification
+          path: results_classification/
+          retention-days: 30
+
+      - name: Upload autoencoder models & plots
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-autoencoder
+          path: results_autoencoder/
+          retention-days: 30
+
+      - name: Upload contrastive models & plots
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-contrastive
+          path: results_contrastive/
+          retention-days: 30
+
+      # ── Upload DVC metrics ────────────────────────────────────────────────
+      - name: Upload DVC metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: dvc-metrics
+          path: metrics/
+          retention-days: 30
+
+      # ── Upload Deepchecks reports ─────────────────────────────────────────
+      - name: Upload Deepchecks reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deepchecks-reports
+          path: reports/
+          retention-days: 30
+
+      # ── Upload MLflow runs ────────────────────────────────────────────────
+      - name: Upload MLflow tracking data
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlruns
+          path: mlruns/
+          retention-days: 30
+
+      # ── Show DVC metrics diff ─────────────────────────────────────────────
+      - name: Display DVC metrics
+        run: dvc metrics show --md || true

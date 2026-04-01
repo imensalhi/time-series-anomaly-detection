@@ -1,0 +1,89 @@
+stages:
+
+  # ─────────────────────────────────────────────────────────────
+  # Stage 1 – CWT+CNN Supervised Classification
+  # ─────────────────────────────────────────────────────────────
+  train_classification:
+    cmd: python src/train_classification.py
+    deps:
+      - src/train_classification.py
+      - src/preprocess.py
+      - data/
+    params:
+      - seed
+      - data
+      - windowing
+      - cwt
+      - classification
+      - mlflow
+    outs:
+      - results_classification/
+    metrics:
+      - metrics/classification_metrics.json:
+          cache: false
+
+  # ─────────────────────────────────────────────────────────────
+  # Stage 2 – CWT+CNN Unsupervised Autoencoder
+  # ─────────────────────────────────────────────────────────────
+  train_autoencoder:
+    cmd: python src/train_autoencoder.py
+    deps:
+      - src/train_autoencoder.py
+      - src/preprocess.py
+      - data/
+    params:
+      - seed
+      - data
+      - windowing
+      - cwt
+      - autoencoder
+      - mlflow
+    outs:
+      - results_autoencoder/
+    metrics:
+      - metrics/autoencoder_metrics.json:
+          cache: false
+
+  # ─────────────────────────────────────────────────────────────
+  # Stage 3 – Contrastive Self-Supervised (1D signal)
+  # ─────────────────────────────────────────────────────────────
+  train_contrastive:
+    cmd: python src/train_contrastive.py
+    deps:
+      - src/train_contrastive.py
+      - src/preprocess.py
+      - data/
+    params:
+      - seed
+      - data
+      - windowing
+      - contrastive
+      - mlflow
+    outs:
+      - results_contrastive/
+    metrics:
+      - metrics/contrastive_metrics.json:
+          cache: false
+
+  # ─────────────────────────────────────────────────────────────
+  # Stage 4 – Deepchecks Validation (data integrity + model perf)
+  # ─────────────────────────────────────────────────────────────
+  validate:
+    cmd: python src/validate.py
+    deps:
+      - src/validate.py
+      - src/preprocess.py
+      - data/
+      - results_classification/
+      - results_autoencoder/
+      - results_contrastive/
+    params:
+      - seed
+      - data
+      - windowing
+      - mlflow
+    outs:
+      - reports/deepchecks_data_report.html:
+          cache: false
+      - reports/deepchecks_model_report.html:
+          cache: false
