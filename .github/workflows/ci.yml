@@ -1,4 +1,4 @@
-name: CI — Lint & Data Validation
+name: CI - Lint and Validation
 
 # Runs on every push and pull-request to ensure code quality
 # and basic data integrity before a full training run.
@@ -56,9 +56,8 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # DVC: pull only the data directory (no remote configured → use git-tracked pointer)
-      - name: Install DVC
-        run: pip install dvc
+      - name: Run preprocessing
+        run: python src/preprocess.py
 
       - name: Run data validation (Deepchecks)
         run: python src/validate.py

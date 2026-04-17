@@ -1,5 +1,5 @@
-.PHONY: install lint train-classification train-autoencoder train-contrastive validate \
-        train-all pipeline clean mlflow-ui
+.PHONY: install lint preprocess cluster train-autoencoder train-contrastive evaluate validate \
+	fine-tune transfer train-all pipeline clean mlflow-ui
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Setup
@@ -15,16 +15,22 @@ lint:
 	flake8 src/ --max-line-length=100 --ignore=E203,W503
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Individual training stages
+# Pipeline services
 # ──────────────────────────────────────────────────────────────────────────────
-train-classification:
-	python src/train_classification.py
+preprocess:
+	python src/preprocess.py
+
+cluster:
+	python src/cluster_machine.py
 
 train-autoencoder:
 	python src/train_autoencoder.py
 
 train-contrastive:
 	python src/train_contrastive.py
+
+evaluate:
+	python src/evaluate_models.py
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Validation (Deepchecks)
@@ -33,9 +39,18 @@ validate:
 	python src/validate.py
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Run all training stages then validate
+# Fine-tuning and transfer learning
 # ──────────────────────────────────────────────────────────────────────────────
-train-all: train-classification train-autoencoder train-contrastive validate
+fine-tune:
+	python src/fine_tune.py
+
+transfer:
+	python src/transfer.py
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Run core pipeline services locally
+# ──────────────────────────────────────────────────────────────────────────────
+train-all: preprocess cluster train-autoencoder train-contrastive evaluate validate
 
 # ──────────────────────────────────────────────────────────────────────────────
 # DVC pipeline (recommended — reruns only changed stages)
@@ -53,5 +68,5 @@ mlflow-ui:
 # Clean generated outputs (keeps data/ and mlruns/)
 # ──────────────────────────────────────────────────────────────────────────────
 clean:
-	rm -rf results_classification/ results_autoencoder/ results_contrastive/ \
-	       reports/ metrics/ __pycache__ src/__pycache__
+	rm -rf results_autoencoder/ results_contrastive/ artifacts/ reports/ metrics/ \
+	       __pycache__ src/__pycache__

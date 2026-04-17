@@ -30,9 +30,9 @@ mlruns/
 *.pth
 
 # Generated result directories (tracked by DVC)
-results_classification/
 results_autoencoder/
 results_contrastive/
+artifacts/
 reports/
 metrics/
 

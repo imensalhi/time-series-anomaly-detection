@@ -1,36 +1,41 @@
 stages:
 
-  # ─────────────────────────────────────────────────────────────
-  # Stage 1 – CWT+CNN Supervised Classification
-  # ─────────────────────────────────────────────────────────────
-  train_classification:
-    cmd: python src/train_classification.py
+  preprocess:
+    cmd: python src/preprocess.py
     deps:
-      - src/train_classification.py
       - src/preprocess.py
+      - src/services/
       - data/
     params:
       - seed
       - data
-      - windowing
-      - cwt
-      - classification
-      - mlflow
+      - preprocessing
     outs:
-      - results_classification/
+      - artifacts/preprocessed/
     metrics:
-      - metrics/classification_metrics.json:
+      - metrics/preprocessing_quality.json:
           cache: false
 
-  # ─────────────────────────────────────────────────────────────
-  # Stage 2 – CWT+CNN Unsupervised Autoencoder
-  # ─────────────────────────────────────────────────────────────
+  clustering:
+    cmd: python src/cluster_machine.py
+    deps:
+      - src/cluster_machine.py
+      - src/services/
+      - artifacts/preprocessed/
+    params:
+      - seed
+      - clustering
+      - preprocessing
+    metrics:
+      - metrics/clustering_metrics.json:
+          cache: false
+
   train_autoencoder:
     cmd: python src/train_autoencoder.py
     deps:
       - src/train_autoencoder.py
-      - src/preprocess.py
-      - data/
+      - src/services/
+      - artifacts/preprocessed/
     params:
       - seed
       - data
@@ -44,15 +49,12 @@ stages:
       - metrics/autoencoder_metrics.json:
           cache: false
 
-  # ─────────────────────────────────────────────────────────────
-  # Stage 3 – Contrastive Self-Supervised (1D signal)
-  # ─────────────────────────────────────────────────────────────
   train_contrastive:
     cmd: python src/train_contrastive.py
     deps:
       - src/train_contrastive.py
-      - src/preprocess.py
-      - data/
+      - src/services/
+      - artifacts/preprocessed/
     params:
       - seed
       - data
@@ -65,23 +67,23 @@ stages:
       - metrics/contrastive_metrics.json:
           cache: false
 
-  # ─────────────────────────────────────────────────────────────
-  # Stage 4 – Deepchecks Validation (data integrity + model perf)
-  # ─────────────────────────────────────────────────────────────
+  evaluate:
+    cmd: python src/evaluate_models.py
+    deps:
+      - src/evaluate_models.py
+      - metrics/autoencoder_metrics.json
+      - metrics/contrastive_metrics.json
+    metrics:
+      - metrics/model_comparison.json:
+          cache: false
+
   validate:
     cmd: python src/validate.py
     deps:
       - src/validate.py
-      - src/preprocess.py
-      - data/
-      - results_classification/
+      - artifacts/preprocessed/
       - results_autoencoder/
       - results_contrastive/
-    params:
-      - seed
-      - data
-      - windowing
-      - mlflow
     outs:
       - reports/deepchecks_data_report.html:
           cache: false

@@ -1,11 +1,13 @@
-name: Train — Full DVC Pipeline
+name: Train - Full DVC Pipeline
 
 # Runs the complete MLOps pipeline when code is pushed to main.
 # Stages:
-#   1. train_classification  (CWT + CNN supervised)
-#   2. train_autoencoder     (CWT + CNN unsupervised)
-#   3. train_contrastive     (self-supervised contrastive 1D)
-#   4. validate              (Deepchecks data + model checks)
+#   1. preprocess
+#   2. clustering
+#   3. train_autoencoder
+#   4. train_contrastive
+#   5. evaluate
+#   6. validate
 #
 # Artefacts are uploaded so reviewers can inspect results without
 # having to run the pipeline locally.
@@ -54,14 +56,6 @@ jobs:
         env:
           MLFLOW_TRACKING_URI: mlruns
 
-      # ── Upload trained models ─────────────────────────────────────────────
-      - name: Upload classification models & plots
-        uses: actions/upload-artifact@v4
-        with:
-          name: results-classification
-          path: results_classification/
-          retention-days: 30
-
       - name: Upload autoencoder models & plots
         uses: actions/upload-artifact@v4
         with:
@@ -82,6 +76,13 @@ jobs:
         with:
           name: dvc-metrics
           path: metrics/
+          retention-days: 30
+
+      - name: Upload preprocessing artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprocessed-artifacts
+          path: artifacts/
           retention-days: 30
 
       # ── Upload Deepchecks reports ─────────────────────────────────────────

@@ -18,13 +18,10 @@ data:
       - I11
       - I113
       - I32
-  anomaly_types:
-    - spike
-    - plateau
-    - drift
-    - variance
-    - dropout
-    - shape_shift
+
+preprocessing:
+  fill_method: time
+  idle_quantile: 0.25
 
 windowing:
   window_size: 128
@@ -32,35 +29,45 @@ windowing:
 
 cwt:
   scales_min: 1
-  scales_max: 65   # np.arange(scales_min, scales_max)
+  scales_max: 65
   wavelet: morl
 
-classification:
-  batch_size: 64
-  epochs: 30
-  learning_rate: 0.001
-  anomaly_ratio: 0.15
-  output_dir: results_classification
+clustering:
+  min_k: 2
+  max_k: 5
+  new_machine_file: ""
 
 autoencoder:
   batch_size: 64
-  epochs: 40
+  epochs: 25
   learning_rate: 0.001
-  anomaly_ratio_test: 0.20
-  threshold_percentile: 95
+  anomaly_ratio_test: 0.2
   output_dir: results_autoencoder
 
 contrastive:
-  batch_size: 256
-  epochs_pretrain: 80
+  batch_size: 128
+  epochs_pretrain: 30
   learning_rate: 0.0003
   temperature: 0.05
   embedding_dim: 128
-  anomaly_ratio_test: 0.20
+  anomaly_ratio_test: 0.2
   output_dir: results_contrastive
+
+fine_tuning:
+  source_profile: profil_1_stable
+  target_sensor: I42
+  batch_size: 32
+  epochs: 5
+  learning_rate: 0.0001
+
+transfer:
+  source_profile: profil_1_stable
+  target_sensor: I11
+  batch_size: 32
+  epochs: 5
+  learning_rate: 0.0001
 
 mlflow:
   tracking_uri: mlruns
-  experiment_classification: "cwt-cnn-classification"
-  experiment_autoencoder: "cwt-cnn-autoencoder"
-  experiment_contrastive: "contrastive-1d"
+  experiment_autoencoder: cwt-cnn-autoencoder
+  experiment_contrastive: contrastive-1d
